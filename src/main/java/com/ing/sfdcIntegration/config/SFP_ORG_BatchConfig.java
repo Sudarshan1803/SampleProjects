@@ -3,8 +3,6 @@ package com.ing.sfdcIntegration.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -13,8 +11,6 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.LineMapper;
@@ -30,8 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import com.ing.sfdcIntegration.bean.PartyDataBean;
 import com.ing.sfdcIntegration.processor.SFP_ORG_ItemProcessor;
@@ -76,8 +70,9 @@ public class SFP_ORG_BatchConfig {
 		DefaultLineMapper<PartyDataBean> lineMapper = new DefaultLineMapper<PartyDataBean>();
 		DelimitedLineTokenizer lineTokenizer = new DelimitedLineTokenizer();
 		lineTokenizer.setDelimiter(" ");
-		lineTokenizer.setNames(new String[] { "GridId", "partyName", "privInd", "partyStatus" });
-		lineTokenizer.setIncludedFields(new int[] { 0, 1, 2, 3 });
+		lineTokenizer.setNames(new String[] { "GridId", "partyName", "privInd", "partyStatus", "Street", "FlatNo",
+				"City", "CIBIL", "CreditScore", "Designation", "Role" });
+		lineTokenizer.setIncludedFields(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
 		BeanWrapperFieldSetMapper<PartyDataBean> fieldSetMapper = new BeanWrapperFieldSetMapper<PartyDataBean>();
 		fieldSetMapper.setTargetType(PartyDataBean.class);
 		lineMapper.setLineTokenizer(lineTokenizer);
@@ -86,45 +81,80 @@ public class SFP_ORG_BatchConfig {
 	}
 
 	@Bean
-	public ItemWriter<PartyDataBean> csvwriter() {
+	public ItemWriter<PartyDataBean> accountCsvwriter() {
 		FlatFileItemWriter<PartyDataBean> itemWriter = new FlatFileItemWriter<>();
 
-		String exportFileHeader = "GRIDID,PARTYNAME,PRIVIND,PARTYSTATUS";
+		String exportFileHeader = "GRIDID__C,PARTYNAME__C,PRIVIND__C,PARTYSTATUS__C";
 		StringHeaderWriter headerWriter = new StringHeaderWriter(exportFileHeader);
 		itemWriter.setHeaderCallback(headerWriter);
 
-		String exportFilePath = "G:/Learnings/Projects/sfdcIntegration/partyData.csv";
+		String exportFilePath = "G:/Learnings/Projects/sfdcIntegration/Account.csv";
 		itemWriter.setResource(new FileSystemResource(exportFilePath));
 
-		LineAggregator<PartyDataBean> lineAggregator = createStudentLineAggregator();
+		LineAggregator<PartyDataBean> lineAggregator = createPartyDataLineAggregator("Account");
 		itemWriter.setLineAggregator(lineAggregator);
 
 		return itemWriter;
 	}
 
 	@Bean
-	public JdbcBatchItemWriter<PartyDataBean> databasewriter() {
-		JdbcBatchItemWriter<PartyDataBean> itemWriter = new JdbcBatchItemWriter<PartyDataBean>();
-		itemWriter.setDataSource(dataSource());
-		itemWriter.setSql(
-				"INSERT INTO ACCOUNT (GRIDID, PARTYNAME, PRIVIND, PARTYSTATUS) VALUES (:GridId, :partyName, :privInd, :partyStatus)");
-		itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<PartyDataBean>());
+	public ItemWriter<PartyDataBean> addressCsvwriter() {
+		FlatFileItemWriter<PartyDataBean> itemWriter = new FlatFileItemWriter<>();
+
+		String exportFileHeader = "STREET__C,FLATNO__C,CITY__C";
+		StringHeaderWriter headerWriter = new StringHeaderWriter(exportFileHeader);
+		itemWriter.setHeaderCallback(headerWriter);
+
+		String exportFilePath = "G:/Learnings/Projects/sfdcIntegration/Address.csv";
+		itemWriter.setResource(new FileSystemResource(exportFilePath));
+
+		LineAggregator<PartyDataBean> lineAggregator = createPartyDataLineAggregator("Address");
+		itemWriter.setLineAggregator(lineAggregator);
+
 		return itemWriter;
 	}
 
 	@Bean
-	public DataSource dataSource() {
-		EmbeddedDatabaseBuilder embeddedDatabaseBuilder = new EmbeddedDatabaseBuilder();
-		return embeddedDatabaseBuilder.addScript("classpath:org/springframework/batch/core/schema-drop-h2.sql")
-				.addScript("classpath:org/springframework/batch/core/schema-h2.sql").addScript("classpath:account.sql")
-				.setType(EmbeddedDatabaseType.H2).build();
+	public ItemWriter<PartyDataBean> clientRatingsCsvwriter() {
+		FlatFileItemWriter<PartyDataBean> itemWriter = new FlatFileItemWriter<>();
+
+		String exportFileHeader = "CIBIL__C,CREDITSCORE__C";
+		StringHeaderWriter headerWriter = new StringHeaderWriter(exportFileHeader);
+		itemWriter.setHeaderCallback(headerWriter);
+
+		String exportFilePath = "G:/Learnings/Projects/sfdcIntegration/ClientRatings.csv";
+		itemWriter.setResource(new FileSystemResource(exportFilePath));
+
+		LineAggregator<PartyDataBean> lineAggregator = createPartyDataLineAggregator("ClientRatings");
+		itemWriter.setLineAggregator(lineAggregator);
+
+		return itemWriter;
+	}
+
+	@Bean
+	public ItemWriter<PartyDataBean> relationshipManagersCsvwriter() {
+		FlatFileItemWriter<PartyDataBean> itemWriter = new FlatFileItemWriter<>();
+
+		String exportFileHeader = "DESIGNATION__C,ROLE__C";
+		StringHeaderWriter headerWriter = new StringHeaderWriter(exportFileHeader);
+		itemWriter.setHeaderCallback(headerWriter);
+
+		String exportFilePath = "G:/Learnings/Projects/sfdcIntegration/RelationshipManagers.csv";
+		itemWriter.setResource(new FileSystemResource(exportFilePath));
+
+		LineAggregator<PartyDataBean> lineAggregator = createPartyDataLineAggregator("RelationshipManagers");
+		itemWriter.setLineAggregator(lineAggregator);
+
+		return itemWriter;
 	}
 
 	@Bean
 	public CompositeItemWriter<PartyDataBean> compositeItemWriter() {
-		List<ItemWriter<? super PartyDataBean>> writers = new ArrayList<>(2);
-		writers.add(csvwriter());
-		writers.add(databasewriter());
+		List<ItemWriter<? super PartyDataBean>> writers = new ArrayList<>(5);
+		writers.add(accountCsvwriter());
+		writers.add(addressCsvwriter());
+		writers.add(clientRatingsCsvwriter());
+		writers.add(relationshipManagersCsvwriter());
 
 		CompositeItemWriter<PartyDataBean> itemWriter = new CompositeItemWriter<>();
 
@@ -133,19 +163,29 @@ public class SFP_ORG_BatchConfig {
 		return itemWriter;
 	}
 
-	private LineAggregator<PartyDataBean> createStudentLineAggregator() {
+	private LineAggregator<PartyDataBean> createPartyDataLineAggregator(String writerType) {
 		DelimitedLineAggregator<PartyDataBean> lineAggregator = new DelimitedLineAggregator<>();
 		lineAggregator.setDelimiter(",");
 
-		FieldExtractor<PartyDataBean> fieldExtractor = createStudentFieldExtractor();
+		FieldExtractor<PartyDataBean> fieldExtractor = createPartyDataFieldExtractor(writerType);
 		lineAggregator.setFieldExtractor(fieldExtractor);
 
 		return lineAggregator;
 	}
 
-	private FieldExtractor<PartyDataBean> createStudentFieldExtractor() {
+	private FieldExtractor<PartyDataBean> createPartyDataFieldExtractor(String writerType) {
 		BeanWrapperFieldExtractor<PartyDataBean> extractor = new BeanWrapperFieldExtractor<>();
-		extractor.setNames(new String[] { "GridId", "partyName", "privInd", "partyStatus" });
+		if ("Account".equals(writerType)) {
+			extractor.setNames(new String[] { "GridId", "partyName", "privInd", "partyStatus" });
+		} else if ("Address".equals(writerType)) {
+			extractor.setNames(new String[] { "Street", "FlatNo", "City" });
+		} else if ("ClientRatings".equals(writerType)) {
+			extractor.setNames(new String[] { "CIBIL", "CreditScore" });
+		} else if ("RelationshipManagers".equals(writerType)) {
+			extractor.setNames(new String[] { "Designation", "Role" });
+		} else {
+		}
+
 		return extractor;
 	}
 

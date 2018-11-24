@@ -1,6 +1,7 @@
 package com.ing.sfdcIntegration;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -27,7 +28,8 @@ public class SfdcIntegrationApplication implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		JobParameters params = new JobParametersBuilder().addString("JobID", String.valueOf(System.currentTimeMillis()))
 				.toJobParameters();
-		jobLauncher.run(job, params);
+		JobExecution execution = jobLauncher.run(job, params);
+		System.out.println("Here We can check Exit Status :: "+execution.getExitStatus());
 	}
 	
 /*    @Scheduled(cron = "0 07 22 * * ?")
@@ -39,3 +41,4 @@ public class SfdcIntegrationApplication implements CommandLineRunner {
         jobLauncher.run(job, params);
     }*/
 }
+
